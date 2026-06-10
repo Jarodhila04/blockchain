@@ -1,0 +1,5 @@
+{
+  "name": "GameItem #1234",
+  "description": "An ERC721 NFT minted on Sepolia for tokenId 1234.",
+  "image": "https://game.example/item-id-1234.png"
+}
