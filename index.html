@@ -3,19 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sepolia Block Height</title>
+  <title>GLD Token Balance</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 </head>
 <body>
-  <h1>Sepolia Block Height</h1>
-  <button id="getBlockBtn">Get Current Block Height</button>
-  <p id="result">Click the button to fetch the block height from Sepolia.</p>
+  <h1>ERC20 balanceOf on Sepolia</h1>
+  <p>Contract: GLDToken (Gold / GLD)</p>
+  <button id="getBalanceBtn">Get My GLD Balance</button>
+  <p id="result">Click the button to call balanceOf() with your MetaMask account.</p>
 
   <script>
+    const ERC20_CONTRACT_ADDRESS = "0xBF714941C6f419895e4dC1153b92D76E15e38a79";
     const SEPOLIA_CHAIN_ID = 11155111n;
     const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7";
 
-    document.getElementById("getBlockBtn").addEventListener("click", async () => {
+    const ERC20_ABI = [
+      "function balanceOf(address account) view returns (uint256)",
+      "function decimals() view returns (uint8)",
+      "function symbol() view returns (string)"
+    ];
+
+    document.getElementById("getBalanceBtn").addEventListener("click", async () => {
       const resultEl = document.getElementById("result");
 
       try {
@@ -24,7 +32,8 @@
           return;
         }
 
-        await window.ethereum.request({ method: "eth_requestAccounts" });
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const account = accounts[0];
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         let network = await provider.getNetwork();
@@ -43,8 +52,19 @@
           return;
         }
 
-        const blockNumber = await provider.getBlockNumber();
-        resultEl.textContent = `Current Sepolia block height: ${blockNumber}`;
+        const token = new ethers.Contract(ERC20_CONTRACT_ADDRESS, ERC20_ABI, provider);
+        const [balance, decimals, symbol] = await Promise.all([
+          token.balanceOf(account),
+          token.decimals(),
+          token.symbol(),
+        ]);
+
+        const formattedBalance = ethers.formatUnits(balance, decimals);
+
+        resultEl.textContent =
+          `Account: ${account}\n` +
+          `balanceOf(${account}) = ${balance.toString()}\n` +
+          `Formatted balance: ${formattedBalance} ${symbol}`;
       } catch (error) {
         resultEl.textContent = `Error: ${error.message}`;
       }
