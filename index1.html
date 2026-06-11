@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLD Token Transfer</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h1>ERC20 transfer on Sepolia</h1>
+  <p>Contract: GLDToken (Gold / GLD)</p>
+  <p>Recipient: 0x15433DA387451F9dE4565280C85506CB71aF9376</p>
+  <p>Amount: 10 GLD</p>
+  <button id="transferBtn">Send 10 GLD</button>
+  <p id="result">Click the button to submit a transfer() transaction via MetaMask.</p>
+
+  <script>
+    const ERC20_CONTRACT_ADDRESS = "0xBF714941C6f419895e4dC1153b92D76E15e38a79";
+    const RECIPIENT_ADDRESS = "0x15433DA387451F9dE4565280C85506CB71aF9376";
+    const TRANSFER_AMOUNT = "10";
+    const SEPOLIA_CHAIN_ID = 11155111n;
+    const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7";
+
+    const ERC20_ABI = [
+      "function transfer(address to, uint256 amount) returns (bool)",
+      "function decimals() view returns (uint8)",
+      "function symbol() view returns (string)"
+    ];
+
+    document.getElementById("transferBtn").addEventListener("click", async () => {
+      const resultEl = document.getElementById("result");
+
+      try {
+        if (!window.ethereum) {
+          resultEl.textContent = "MetaMask not found. Please install MetaMask in Chrome or Firefox.";
+          return;
+        }
+
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        let network = await provider.getNetwork();
+
+        if (network.chainId !== SEPOLIA_CHAIN_ID) {
+          resultEl.textContent = "Please switch MetaMask to Sepolia testnet...";
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: SEPOLIA_CHAIN_ID_HEX }],
+          });
+          network = await provider.getNetwork();
+        }
+
+        if (network.chainId !== SEPOLIA_CHAIN_ID) {
+          resultEl.textContent = "MetaMask is not connected to Sepolia.";
+          return;
+        }
+
+        const signer = await provider.getSigner();
+        const account = await signer.getAddress();
+        const token = new ethers.Contract(ERC20_CONTRACT_ADDRESS, ERC20_ABI, signer);
+
+        const decimals = await token.decimals();
+        const symbol = await token.symbol();
+        const amount = ethers.parseUnits(TRANSFER_AMOUNT, decimals);
+
+        resultEl.textContent = "Confirm the transaction in MetaMask...";
+
+        const tx = await token.transfer(RECIPIENT_ADDRESS, amount);
+        resultEl.textContent = `Transaction submitted. Waiting for confirmation...\nHash: ${tx.hash}`;
+
+        await tx.wait();
+
+        resultEl.textContent =
+          `Transfer successful!\n` +
+          `From: ${account}\n` +
+          `To: ${RECIPIENT_ADDRESS}\n` +
+          `Amount: ${TRANSFER_AMOUNT} ${symbol}\n` +
+          `Transaction hash: ${tx.hash}`;
+      } catch (error) {
+        resultEl.textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
