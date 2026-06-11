@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sepolia Block Height</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h1>Sepolia Block Height</h1>
+  <button id="getBlockBtn">Get Current Block Height</button>
+  <p id="result">Click the button to fetch the block height from Sepolia.</p>
+
+  <script>
+    const SEPOLIA_CHAIN_ID = 11155111n;
+    const SEPOLIA_CHAIN_ID_HEX = "0xaa36a7";
+
+    document.getElementById("getBlockBtn").addEventListener("click", async () => {
+      const resultEl = document.getElementById("result");
+
+      try {
+        if (!window.ethereum) {
+          resultEl.textContent = "MetaMask not found. Please install MetaMask.";
+          return;
+        }
+
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        let network = await provider.getNetwork();
+
+        if (network.chainId !== SEPOLIA_CHAIN_ID) {
+          resultEl.textContent = "Please switch MetaMask to Sepolia testnet...";
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: SEPOLIA_CHAIN_ID_HEX }],
+          });
+          network = await provider.getNetwork();
+        }
+
+        if (network.chainId !== SEPOLIA_CHAIN_ID) {
+          resultEl.textContent = "MetaMask is not connected to Sepolia.";
+          return;
+        }
+
+        const blockNumber = await provider.getBlockNumber();
+        resultEl.textContent = `Current Sepolia block height: ${blockNumber}`;
+      } catch (error) {
+        resultEl.textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
